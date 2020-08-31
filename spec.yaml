@@ -1,0 +1,786 @@
+openapi: 3.0.2
+info:
+  title: Delilah Restó
+  description: API que simula el sistema de pedidos online de un restaurant.
+  version: 1.0.0
+servers: 
+  - url: /productos.com
+  - url: /usuarios.com
+  - url: /pedidos.com
+paths:
+  /productos:
+    get:
+      tags: [Productos]
+      summary: Obtencion de todos los productos de la carta
+      description: Lista de todos los productos, disponibles y sin stock de la carta del restaurante.
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/producto"
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No se encuentra la lista de productos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    post:
+      tags: [Productos]
+      summary: Agregar productos
+      description: Agregar nuevos productos a la carta del restaurant
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": "#/components/schemas/producto"
+      responses:
+        201:
+          description: Producto creado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/producto"
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+  /productos/id:
+    get:
+      tags: [Productos]
+      summary: Obtencion de un producto
+      description: Obtención de un producto a través de su id.
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/producto"
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No se encuentra la lista de productos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    put:
+      tags: [Productos]
+      summary: Actualiza o reemplaza un producto existente
+      description: Modifica totalmente un producto de la carta
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": "#/components/schemas/producto"
+      responses:
+        201:
+          description: Producto modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/producto"
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    patch:
+      tags: [Productos]
+      summary: Actualiza parcialmente un producto existente
+      description: Modifica parcialmente un producto de la carta
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": "#/components/schemas/producto"
+      responses:
+        201:
+          description: Producto modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/producto"
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    delete:
+      tags: [Productos]
+      summary: Elimina un producto 
+      description: Elimina un producto de la carta.
+      responses:
+        204:
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 204
+                  message:
+                    type: string  
+  /usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Obtencion de todos los usuarios
+      description: Lista de todos los usuarios guardados en la base de datos del sistema de pedidos del restaurant
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/usuario"
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No se encuentra la lista de usuarios.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    post:
+      tags: [Usuarios]
+      summary: Agregar Usuarios
+      description: Agregar nuevos usuarios a la base de datos del restaurant
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": "#/components/schemas/usuario"
+      responses:
+        201:
+          description: Usuario creado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/usuario"
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string  
+  /usuarios/id:
+    get:
+      tags: [Usuarios]
+      summary: Obtencion un usuario
+      description: Usuario elegido por id
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/usuario"
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No se encuentra la lista de usuarios.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    put:
+      tags: [Usuarios]
+      summary: Actualiza o reemplaza un usuario existente
+      description: Modifica totalmente un usuario de la base de datos
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": '#/components/schemas/usuario'
+      responses:
+        201:
+          description: Producto modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/usuario'
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    patch:
+      tags: [Usuarios]
+      summary: Actualiza parcialmente un usuario existente
+      description: Modifica parcialmente un usuario de la base de datos
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": '#/components/schemas/usuario'
+      responses:
+        201:
+          description: Usuario modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/usuario'
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    delete:
+      tags: [Usuarios]
+      summary: Elimina un usuario 
+      description: Elimina un usuario de la base de datos
+      responses:
+        204:
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 204
+                  message:
+                    type: string  
+  /pedidos:
+    get:
+      tags: [Pedidos]
+      summary: Obtencion de todos los pedidos
+      description: Lista de todos los pedidos guardados en la base de datos del sistema de pedidos del restaurant
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": '#/components/schemas/pedido'
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No se encuentra la lista de usuarios.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    post:
+      tags: [Pedidos]
+      summary: Agregar pedidos
+      description: Agregar nuevos pedidos a la base de datos del restaurant
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": "#/components/schemas/pedido"
+      responses:
+        201:
+          description: Pedido agregado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/pedido"
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string  
+  /pedidos/id:
+    get:
+      tags: [Pedidos]
+      summary: Obtencion un pedido
+      description: Pedido elegido por id
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/pedido"
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No se encuentra la lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    put:
+      tags: [Pedidos]
+      summary: Actualiza o reemplaza un pedido existente
+      description: Modifica totalmente un pedido de la base de datos
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": '#/components/schemas/pedido'
+      responses:
+        201:
+          description: Pedido modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/pedido'
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    patch:
+      tags: [Pedidos]
+      summary: Actualiza parcialmente un pedido existente
+      description: Modifica parcialmente un pedido de la base de datos
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": '#/components/schemas/pedido'
+      responses:
+        201:
+          description: Usuario modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/pedido'
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    delete:
+      tags: [Pedidos]
+      summary: Elimina un pedido 
+      description: Elimina un pedido de la base de datos
+      responses:
+        204:
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 204
+                  message:
+                    type: string  
+components:
+  schemas:
+    producto:
+      type: object
+      properties:
+        id:
+          type: number
+        nombre:
+          type: string
+        precio:
+          type: number
+        ingredientes:
+          type: string
+        stock:
+          type: number
+    usuario:
+      type: object
+      properties:
+        id:
+          type: number
+        nombredeususario:
+          type: string
+        constraseña:
+          type: string
+        nombre:
+          type: string
+        apellido:
+          type: string
+        email:
+          type: string
+        telefono:
+          type: number
+        direccion:
+          type: number
+    pedido:
+      type: object
+      properties:
+        id:
+          type: number
+        usuario:
+          type: string
+        producto:
+          type: string
+        fecha:
+          type: string
+          format: date
+        mododepago:
+          type: string
+        estado:
+          type: string
+      
+
+  
+ 
+  
+  
