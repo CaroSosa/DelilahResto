@@ -8,12 +8,13 @@ CREATE TABLE productos(
 CREATE TABLE usuarios(
     id INT PRIMARY KEY NOT NULL AUTO_INCREMENT ,
     nombredeusuario VARCHAR(60) NOT NULL UNIQUE,
-    constraseña VARCHAR(10) NOT NULL,
+    contraseña VARCHAR(15) NOT NULL,
     nombre VARCHAR(60) NOT NULL,
     apellido VARCHAR(60) NOT NULL,
     email VARCHAR(60) NOT NULL,
     telefono INT(15) NOT NULL,
-    direccion TEXT NOT NULL
+    direccion TEXT NOT NULL,
+    is_admin VARCHAR(5) NOT NULL
 );
 CREATE TABLE pedidos(
     id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
@@ -23,3 +24,6 @@ CREATE TABLE pedidos(
     mododepago VARCHAR(60) NOT NULL,
     estado VARCHAR(60) NOT NULL
 );
+
+INSERT INTO usuarios (nombredeusuario, contraseña, is_admin)
+VALUES ("administrador", "acamicadelilah", "true")

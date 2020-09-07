@@ -1,6 +1,8 @@
 const express = require("express");
 const Sequelize = require("sequelize");
-const bodyParser = require("body-parser")
+const bodyParser = require("body-parser");
+const jwt = require("jsonwebtoken");
+const CLAVE_CIFRADO_SERVER = "PROYECTO3DELILAHACAMICA";
 const conexion = new Sequelize("mysql://root@localhost:3306/delilah")
 const server = express();
 
@@ -25,6 +27,41 @@ function validarInfoCompletaProducto (req,res,next){
         next();
     }
 }
+function verificarIdExistenteProductos (req,res,next){
+    function verificarIdProducto (producto){
+        return producto.id == req.params.id;
+    }
+    const verificarIdExistente = listaDeProductos.find(verificarIdProducto);
+    if(verificarIdExistente != undefined){
+        next();
+    }else{
+        res.status(404).json({ok:false, res:"No se encontró ningún producto registrado con ese id."})
+    }
+}
+function validarUsuarioContraseña (req,res,next){
+    function validarDatos (usuario){
+        return (usuario.nombredeusuario == req.body.nombredeusuario &&
+               usuario.contraseña == req.body.contraseña)
+    }
+    if(validarDatos != undefined){
+        next();
+        }else{
+        res.status(401).json({ok:false, res:"Usuario o contraseña incorrecta"})
+    }
+}
+let verificarToken;
+function autenticarUsuario (req,res,next){
+    try{
+        const tokenRecibido = req.headers.authorization.split(" ")[1];
+        verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
+        if(verificarToken){
+            req.usuario = verificarToken;
+            return next();
+        }
+    }catch(err){
+        res.json({error: "error al validar el usuario"})
+    }
+}
 
 //Listas
 let listaDeProductos;
@@ -40,13 +77,20 @@ async function selectPedidos(){
 selectProductos(); 
 selectUsuarios();
 selectPedidos();
-
-
 server.get("/usuarios", (req, res)=>{
-    res.json(listaDeUsuarios)
+    if(listaDeUsuarios.length > 0){
+        res.json(listaDeUsuarios)
+    }else{
+        res.status(404).json({ok:false, res:"No hay ningún usuario registrado por el momento"})
+    }
+   
 });
 server.get("/pedidos", (req, res)=>{
-    res.json(listaDePedidos)
+    if(listaDePedidos.length > 0){
+        res.json(listaDePedidos)
+    }else{
+        res.status(404).json({ok:false, res:"No hay ningún pedido registrado por el momento"})
+    }
 });
 ///////////////PRODUCTOS
 //Get lista de productos
@@ -54,23 +98,22 @@ async function selectProductos(){
     listaDeProductos= await conexion.query("SELECT * FROM productos", {type: conexion.QueryTypes.SELECT})
 }
 server.get("/productos", (req, res)=>{
-    selectProductos();
-    res.json(listaDeProductos)
+    if(listaDeProductos.length > 0){
+        res.json(listaDeProductos)
+    }else{
+        res.status(404).json({ok:false, res:"No hay ningún producto registrado por el momento"})
+    }
 });
-//Get producto por id 
-let resultadoProductoPorId; 
-server.get("/productos/:id", (req,res,err)=>{
-    conexion.query("SELECT * FROM productos WHERE id = ?", {replacements: [req.params.id]}, {type: conexion.QueryTypes.SELECT})
+//Get producto por id  
+server.get("/productos/:id", autenticarUsuario, verificarIdExistenteProductos, (req,res,err)=>{
+    conexion.query("SELECT * FROM productos WHERE id = ?", 
+        {replacements: [req.params.id], type: conexion.QueryTypes.SELECT})
     .then((respuesta)=>{
-        resultadoProductoPorId = respuesta;
+        res.json(respuesta)
     })
-    .catch((err)=>{
-        res.status(404).json({ok:false, res:"No se encontró ningun producto con ese id"})
-    })
-    res.json(resultadoProductoPorId)
 })
 //Post productos por formulario
-server.post("/productos", validarInfoCompletaProducto, (req,res,err)=>{
+server.post("/productos", habilitarPermisos, validarInfoCompletaProducto, (req,res,err)=>{
     function verificarProductoExistente (producto){
         return producto.nombre === req.body.nombre;
     }
@@ -92,15 +135,11 @@ server.post("/productos", validarInfoCompletaProducto, (req,res,err)=>{
     }
 })
 //Put productos por id
-server.put("/productos/:id", validarInfoCompletaProducto,(req,res,err)=>{
-    function verificarIdProducto (producto){
-        return producto.id == req.params.id;
-    }
-    const verificarIdExistente = listaDeProductos.find(verificarIdProducto);
-    if( verificarIdExistente != undefined){
+server.put("/productos/:id", validarInfoCompletaProducto, verificarIdExistenteProductos,(req,res,err)=>{
     conexion.query("UPDATE productos SET nombre = ?, precio = ?, ingredientes = ?, stock = ? WHERE id = ?",
     {replacements: [ req.body.nombre, req.body.precio, req.body.ingredientes, req.body.stock, req.params.id]})
         .then((resultados)=>{
+            console.log(resultados)
             console.log("Producto actualizado con éxito")
             res.status(201).json({ok:true, res:"Producto actualizado"})
             selectProductos;
@@ -109,46 +148,52 @@ server.put("/productos/:id", validarInfoCompletaProducto,(req,res,err)=>{
             res.status(409).json({ ok: false, res: "Algo parece estar mal en los datos ingresados"})
             console.log("Algo salió mal....", error)
         })
-    }else{
-        res.status(404).json({ ok: false, res:"No hay ningun producto registrado con el id indicado"})
-    }
 })
 //Delete productos por id 
-server.delete("/productos/:id", (req,res,err)=>{
-    function verificarIdEliminar (producto){
-        return producto.id == req.params.id;
-    }
-    const verificarIdExistenteEliminar = listaDeProductos.find(verificarIdEliminar);
-    if(verificarIdExistenteEliminar != undefined){
+server.delete("/productos/:id",verificarIdExistenteProductos, (req,res,err)=>{
     conexion.query("DELETE FROM productos WHERE id= ?", {replacements: [req.params.id]})
         .then((resultados)=>{
             console.log("Producto eliminado con éxito")
             res.status(204)
             selectProductos;
         })
-    }else{
-        res.status(404).json({ok:false, res:"No se encontró ningun producto con el id indicado"})
-    }
 })
-//Post usuarios por formulario
-server.post("/usuarios", validarInfoCompletaUsuario, (req,res,err)=>{
+//////////USUARIOS
+//Post (sign up) usuarios por formulario
+server.post("/usuarios/signup", validarInfoCompletaUsuario, (req,res,err)=>{
     function verificarUsuarioExistente (usuario){
         return usuario.nombredeusuario === req.body.nombredeusuario;
     }
-    const verificarUsuario = listaDeUsuarios.find(verificarUsuarioExistente);
+    const verificarUsuario = listaDeUsuarios.find(verificarUsuarioExistente)
     if(verificarUsuario != undefined){
         res.status(409).json({ok:false, err: "Ya existe un usuario con ese nombredeusuario"})
-        console.log("upsi ya existe", err)
-    }else{
-        conexion.query("INSERT INTO usuarios (nombredeusuario, contraseña, nombre, apellido, email, telefono, direccion) VALUES (?,?,?,?,?,?,?)",
-            {replacements: [req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion]})
-                .then((resultados)=>{
-                    console.log( "Usuario creado con éxito" , resultados)
-                    res.status(200).json({ ok:true, res:"Usuario"})
-                    selectUsuarios();
-            })
-                .catch((error)=>{
-                    console.log("Algo salió mal.......", err)
-                })
+    }else{ 
+        conexion.query("INSERT INTO usuarios (nombredeusuario, contraseña, nombre, apellido, email, telefono, direccion, is_admin) VALUES (?,?,?,?,?,?,?,?)",
+    {replacements: [req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion, "false"]})
+        .then((resultados)=>{
+            console.log( "Usuario creado con éxito" , resultados)
+            res.status(200).json({ ok:true, res:"Usuario creado con éxito"})
+            selectUsuarios();
+        })
+        .catch((error)=>{
+            console.log("Algo salió mal.......", error)
+        })
     }
 })
+//post (log in) usuarios 
+server.post("/usuarios/login", validarUsuarioContraseña, (req,res,err)=>{
+    const {nombredeusuario, contraseña} = req.body;
+    const token = jwt.sign({nombredeusuario, contraseña}, CLAVE_CIFRADO_SERVER);
+    res.json({token})
+})
+
+
+function habilitarPermisos (req,res,next){
+    const tokenRecibido = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
+    if(verificarToken.nombredeusuario == "administrador"){
+        next();
+    }else{
+        res.status(401).json({ok:false, res:"No posees los permisos necesarios"})
+    }
+}
