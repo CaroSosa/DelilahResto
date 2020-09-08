@@ -38,12 +38,25 @@ function verificarIdExistenteProductos (req,res,next){
         res.status(404).json({ok:false, res:"No se encontró ningún producto registrado con ese id."})
     }
 }
+function verificarNombredeusuario (req,res,next){
+    function verificarUsuario (usuario){
+        return usuario.nombredeusuario == req.params.nombredeusuario;
+    }
+    const verificarUsuarioExistente = listaDeUsuarios.find(verificarUsuario);
+    console.log(verificarUsuarioExistente)
+    if(verificarUsuarioExistente != undefined){
+        next();
+    }else{
+        res.status(404).json({ok:false, res:"No se encontró ningún usuario registrado con ese nombredeusuario."})
+    }
+}
 function validarUsuarioContraseña (req,res,next){
     function validarDatos (usuario){
-        return (usuario.nombredeusuario == req.body.nombredeusuario &&
+       return (usuario.nombredeusuario == req.body.nombredeusuario &&
                usuario.contraseña == req.body.contraseña)
     }
-    if(validarDatos != undefined){
+    const usuarioEncontrado = listaDeUsuarios.find(validarDatos)
+    if(usuarioEncontrado != undefined){
         next();
         }else{
         res.status(401).json({ok:false, res:"Usuario o contraseña incorrecta"})
@@ -56,10 +69,32 @@ function autenticarUsuario (req,res,next){
         verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
         if(verificarToken){
             req.usuario = verificarToken;
+            console.log(req.usuario)
             return next();
         }
     }catch(err){
         res.json({error: "error al validar el usuario"})
+    }
+}
+function habilitarPermisosAdministrador(req,res,next){
+    const tokenRecibido = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
+    function buscarUsuarioAdministrador (usuario){
+        return usuario.nombredeusuario === verificarToken.nombredeusuario;
+    }
+    const verificarAdminstrador = listaDeUsuarios.find(buscarUsuarioAdministrador)
+    if(verificarAdminstrador.is_admin == "true"){
+        next();
+    }else{
+        res.status(401).json({ok:false, res:"No posees los permisos necesarios"})
+    }
+}
+function verificarLogIn (req,res,next){
+    const headerAutorizacion = req.headers.authorization;
+    if(headerAutorizacion != undefined){
+        next();
+    }else{
+        res.json({ res:"Debes iniciar sesion, dirígete a /usuarios/login"})
     }
 }
 
@@ -77,27 +112,13 @@ async function selectPedidos(){
 selectProductos(); 
 selectUsuarios();
 selectPedidos();
-server.get("/usuarios", (req, res)=>{
-    if(listaDeUsuarios.length > 0){
-        res.json(listaDeUsuarios)
-    }else{
-        res.status(404).json({ok:false, res:"No hay ningún usuario registrado por el momento"})
-    }
-   
-});
-server.get("/pedidos", (req, res)=>{
-    if(listaDePedidos.length > 0){
-        res.json(listaDePedidos)
-    }else{
-        res.status(404).json({ok:false, res:"No hay ningún pedido registrado por el momento"})
-    }
-});
+
 ///////////////PRODUCTOS
 //Get lista de productos
 async function selectProductos(){
     listaDeProductos= await conexion.query("SELECT * FROM productos", {type: conexion.QueryTypes.SELECT})
 }
-server.get("/productos", (req, res)=>{
+server.get("/productos", verificarLogIn, autenticarUsuario, (req, res)=>{
     if(listaDeProductos.length > 0){
         res.json(listaDeProductos)
     }else{
@@ -105,7 +126,7 @@ server.get("/productos", (req, res)=>{
     }
 });
 //Get producto por id  
-server.get("/productos/:id", autenticarUsuario, verificarIdExistenteProductos, (req,res,err)=>{
+server.get("/productos/:id", verificarLogIn, autenticarUsuario, verificarIdExistenteProductos, (req,res,err)=>{
     conexion.query("SELECT * FROM productos WHERE id = ?", 
         {replacements: [req.params.id], type: conexion.QueryTypes.SELECT})
     .then((respuesta)=>{
@@ -113,7 +134,7 @@ server.get("/productos/:id", autenticarUsuario, verificarIdExistenteProductos, (
     })
 })
 //Post productos por formulario
-server.post("/productos", habilitarPermisos, validarInfoCompletaProducto, (req,res,err)=>{
+server.post("/productos", verificarLogIn, habilitarPermisosAdministrador, validarInfoCompletaProducto, (req,res,err)=>{
     function verificarProductoExistente (producto){
         return producto.nombre === req.body.nombre;
     }
@@ -135,7 +156,7 @@ server.post("/productos", habilitarPermisos, validarInfoCompletaProducto, (req,r
     }
 })
 //Put productos por id
-server.put("/productos/:id", validarInfoCompletaProducto, verificarIdExistenteProductos,(req,res,err)=>{
+server.put("/productos/:id", verificarLogIn, habilitarPermisosAdministrador, verificarIdExistenteProductos, validarInfoCompletaProducto,(req,res,err)=>{
     conexion.query("UPDATE productos SET nombre = ?, precio = ?, ingredientes = ?, stock = ? WHERE id = ?",
     {replacements: [ req.body.nombre, req.body.precio, req.body.ingredientes, req.body.stock, req.params.id]})
         .then((resultados)=>{
@@ -150,7 +171,7 @@ server.put("/productos/:id", validarInfoCompletaProducto, verificarIdExistentePr
         })
 })
 //Delete productos por id 
-server.delete("/productos/:id",verificarIdExistenteProductos, (req,res,err)=>{
+server.delete("/productos/:id", verificarLogIn, habilitarPermisosAdministrador, verificarIdExistenteProductos, (req,res,err)=>{
     conexion.query("DELETE FROM productos WHERE id= ?", {replacements: [req.params.id]})
         .then((resultados)=>{
             console.log("Producto eliminado con éxito")
@@ -180,20 +201,91 @@ server.post("/usuarios/signup", validarInfoCompletaUsuario, (req,res,err)=>{
         })
     }
 })
-//post (log in) usuarios 
+//Post (log in) usuarios 
 server.post("/usuarios/login", validarUsuarioContraseña, (req,res,err)=>{
     const {nombredeusuario, contraseña} = req.body;
     const token = jwt.sign({nombredeusuario, contraseña}, CLAVE_CIFRADO_SERVER);
     res.json({token})
 })
-
-
-function habilitarPermisos (req,res,next){
-    const tokenRecibido = req.headers.authorization.split(" ")[1];
-    verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
-    if(verificarToken.nombredeusuario == "administrador"){
-        next();
+//Get lista de usuarios 
+server.get("/usuarios", verificarLogIn, habilitarPermisosAdministrador, (req, res)=>{
+    if(listaDeUsuarios.length > 0){
+        res.json(listaDeUsuarios)
     }else{
-        res.status(401).json({ok:false, res:"No posees los permisos necesarios"})
+        res.status(404).json({ok:false, res:"No hay ningún usuario registrado por el momento"})
     }
-}
+});
+//Get información del usuario logueado
+server.get("/usuarios/myinfo", verificarLogIn, (req,res,err)=>{
+    const tokenUsuario = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenUsuario, CLAVE_CIFRADO_SERVER);
+    function buscarInfoUsuario (usuario){
+        return usuario.nombredeusuario === verificarToken.nombredeusuario;
+    }
+    const infoDeUsuario = listaDeUsuarios.find(buscarInfoUsuario)
+    res.json({infoDeUsuario})
+})
+//Put información del usuario logueado
+/*server.put("/usuarios/myinfo",verificarLogIn, (req,res,err)=>{
+    const tokenUsuario = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenUsuario, CLAVE_CIFRADO_SERVER);
+    conexion.query("UPDATE usuarios SET nombredeusuario = ?, contraseña = ?, nombre = ?, apellido = ?,  email = ?, telefono = ?, direccion = ? WHERE nombredeusuario = ?",
+    {replacements: [ req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion,  verificarToken.nombredeusuario ]})
+        .then((resultados)=>{
+            console.log("Usuario actualizado con éxito")
+            res.status(201).json({ok:true, res:"Usuario actualizado"})
+            
+        })
+        .catch((error)=>{
+            res.status(409).json({ ok: false, res: "Algo parece estar mal en los datos ingresados"})
+            console.log("Algo salió mal....", error)
+        }) 
+        selectUsuarios;
+})*/
+    
+//Get usuario por nombredeusuario
+server.get("/usuarios/:nombredeusuario", verificarLogIn, habilitarPermisosAdministrador, verificarNombredeusuario, (req,res,err)=>{
+    conexion.query("SELECT * FROM usuarios WHERE nombredeusuario = ?", 
+        {replacements: [req.params.nombredeusuario], type: conexion.QueryTypes.SELECT})
+    .then((respuesta)=>{
+        res.status(200).json(respuesta)
+    })
+})
+//Put usuarios por nombredeusuario
+server.put("/usuarios/:nombredeusuario", verificarLogIn, habilitarPermisosAdministrador, verificarNombredeusuario, (req,res,err)=>{
+    conexion.query("UPDATE usuarios SET nombredeusuario = ?, contraseña = ?, nombre = ?, apellido = ?,  email = ?, telefono = ?, direccion = ? WHERE nombredeusuario = ?",
+    {replacements: [ req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion,  req.params.nombredeusuario ]})
+        .then((resultados)=>{
+            console.log("Usuario actualizado con éxito")
+            res.status(201).json({ok:true, res:"Usuario actualizado"})
+            selectUsuarios;
+        })
+        .catch((error)=>{
+            res.status(409).json({ ok: false, res: "Algo parece estar mal en los datos ingresados"})
+            console.log("Algo salió mal....", error)
+        }) 
+ 
+})
+//Delete usuario por nombredeusuario
+server.delete("/usuarios/:nombredeusuario", verificarLogIn, habilitarPermisosAdministrador, verificarNombredeusuario, (req,res,err)=>{
+    conexion.query("DELETE FROM usuarios WHERE nombredeusuario= ?", {replacements: [req.params.nombredeusuario]})
+        .then((resultados)=>{
+            console.log("Usuario eliminado con éxito")
+            res.status(204)
+            selectUsuarios;
+        }
+    )
+})
+//////////////PEDIDOS
+//Get lista de pedidos
+server.get("/pedidos", (req, res)=>{
+    if(listaDePedidos.length > 0){
+        res.json(listaDePedidos)
+    }else{
+        res.status(404).json({ok:false, res:"No hay ningún pedido registrado por el momento"})
+    }
+});
+//Post pedidos 
+server.post("/pedidos", verificarLogIn, (req,res,err)=>{
+    
+}  )

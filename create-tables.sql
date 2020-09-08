@@ -27,3 +27,5 @@ CREATE TABLE pedidos(
 
 INSERT INTO usuarios (nombredeusuario, contraseña, is_admin)
 VALUES ("administrador", "acamicadelilah", "true")
+
+
