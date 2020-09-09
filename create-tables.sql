@@ -18,8 +18,9 @@ CREATE TABLE usuarios(
 );
 CREATE TABLE pedidos(
     id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-    usuario VARCHAR(60) NOT NULL,
-    producto VARCHAR(60) NOT NULL,
+    usuario_id INT NOT NULL,
+    FOREIGN KEY FK_idUsuario (usuario_id) REFERENCES usuarios(id),
+    productos VARCHAR (100) NOT NULL,
     fecha DATE NOT NULL,
     mododepago VARCHAR(60) NOT NULL,
     estado VARCHAR(60) NOT NULL

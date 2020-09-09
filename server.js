@@ -2,6 +2,7 @@ const express = require("express");
 const Sequelize = require("sequelize");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
+const moment = require("moment");
 const CLAVE_CIFRADO_SERVER = "PROYECTO3DELILAHACAMICA";
 const conexion = new Sequelize("mysql://root@localhost:3306/delilah")
 const server = express();
@@ -38,6 +39,17 @@ function verificarIdExistenteProductos (req,res,next){
         res.status(404).json({ok:false, res:"No se encontró ningún producto registrado con ese id."})
     }
 }
+function verificarIdExistentePedidos (req,res,next){
+    function verificarIdPedido (pedido){
+        return pedido.id == req.params.id;
+    }
+    const verificarId = listaDePedidos.find(verificarIdPedido);
+    if(verificarId != undefined){
+        next();
+    }else{
+        res.status(404).json({ok:false, res:"No se encontró ningún pedido registrado con ese id."})
+    }
+}
 function verificarNombredeusuario (req,res,next){
     function verificarUsuario (usuario){
         return usuario.nombredeusuario == req.params.nombredeusuario;
@@ -69,7 +81,6 @@ function autenticarUsuario (req,res,next){
         verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
         if(verificarToken){
             req.usuario = verificarToken;
-            console.log(req.usuario)
             return next();
         }
     }catch(err){
@@ -224,25 +235,7 @@ server.get("/usuarios/myinfo", verificarLogIn, (req,res,err)=>{
     }
     const infoDeUsuario = listaDeUsuarios.find(buscarInfoUsuario)
     res.json({infoDeUsuario})
-})
-//Put información del usuario logueado
-/*server.put("/usuarios/myinfo",verificarLogIn, (req,res,err)=>{
-    const tokenUsuario = req.headers.authorization.split(" ")[1];
-    verificarToken = jwt.verify(tokenUsuario, CLAVE_CIFRADO_SERVER);
-    conexion.query("UPDATE usuarios SET nombredeusuario = ?, contraseña = ?, nombre = ?, apellido = ?,  email = ?, telefono = ?, direccion = ? WHERE nombredeusuario = ?",
-    {replacements: [ req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion,  verificarToken.nombredeusuario ]})
-        .then((resultados)=>{
-            console.log("Usuario actualizado con éxito")
-            res.status(201).json({ok:true, res:"Usuario actualizado"})
-            
-        })
-        .catch((error)=>{
-            res.status(409).json({ ok: false, res: "Algo parece estar mal en los datos ingresados"})
-            console.log("Algo salió mal....", error)
-        }) 
-        selectUsuarios;
-})*/
-    
+})  
 //Get usuario por nombredeusuario
 server.get("/usuarios/:nombredeusuario", verificarLogIn, habilitarPermisosAdministrador, verificarNombredeusuario, (req,res,err)=>{
     conexion.query("SELECT * FROM usuarios WHERE nombredeusuario = ?", 
@@ -278,14 +271,82 @@ server.delete("/usuarios/:nombredeusuario", verificarLogIn, habilitarPermisosAdm
 })
 //////////////PEDIDOS
 //Get lista de pedidos
-server.get("/pedidos", (req, res)=>{
+server.get("/pedidos", verificarLogIn, habilitarPermisosAdministrador, (req, res)=>{
     if(listaDePedidos.length > 0){
         res.json(listaDePedidos)
     }else{
         res.status(404).json({ok:false, res:"No hay ningún pedido registrado por el momento"})
     }
 });
+//Get pedido por id
+server.get("/pedidos/:id", verificarLogIn, habilitarPermisosAdministrador, verificarIdExistentePedidos, (req, res)=>{
+    conexion.query("SELECT * FROM pedidos WHERE id = ?", 
+        {replacements: [req.params.id], type: conexion.QueryTypes.SELECT})
+    .then((respuesta)=>{
+        res.json(respuesta)
+    })
+    selectPedidos;
+})
 //Post pedidos 
 server.post("/pedidos", verificarLogIn, (req,res,err)=>{
-    
-}  )
+    let productosPedidos = [];
+    const productosRequest = req.body.productos;
+    function concatenarProductoCantidad (element){
+        productosPedidos.push( element.nombre + "X" + element.cantidad + "  ")
+    }
+    productosRequest.forEach(concatenarProductoCantidad);
+    const stringProductos = productosPedidos.toString();
+    const tokenUsuarioPedidos = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenUsuarioPedidos, CLAVE_CIFRADO_SERVER);
+    function buscarInfoUsuarioPedidos (usuario){
+        return usuario.nombredeusuario === verificarToken.nombredeusuario;
+    }
+    const infoDeUsuarioPedidos = listaDeUsuarios.find(buscarInfoUsuarioPedidos);
+    const fechaDePedido = moment().format('YYYY-MM-DDThh:mm');
+    conexion.query("INSERT INTO pedidos (usuario_id, productos, fecha, mododepago, estado) VALUES (?,?,?,?,?)",
+    {replacements: [infoDeUsuarioPedidos.id, stringProductos, fechaDePedido, req.body.mododepago, "Nuevo"]})
+        .then((resultados)=>{
+            console.log(resultados)
+            res.status(200).json({ ok:true, res:"Pedido enviado con éxito"})
+            selectPedidos();
+        })
+        .catch((err)=>{
+            console.log("Algo salió mal.......", err)
+        })
+    })
+//Get mis pedidos 
+server.get("/pedidos/mispedidos", verificarLogIn, (req,res,err)=>{
+    const tokenUsuario = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenUsuario, CLAVE_CIFRADO_SERVER);
+    function buscarInfoUsuario (usuario){
+        return usuario.nombredeusuario === verificarToken.nombredeusuario;
+    }
+    const infoDeUsuario = listaDeUsuarios.find(buscarInfoUsuario)
+    conexion.query("SELECT * FROM pedidos WHERE usuario_id = ?", 
+    {replacements: [infoDeUsuario.id], type: conexion.QueryTypes.SELECT})
+        .then((respuesta)=>{
+            res.status(200).json(respuesta)
+        })
+})  
+//Patch estado de pedido por id
+server.patch("/pedidos/:id", verificarLogIn, habilitarPermisosAdministrador, verificarIdExistentePedidos, (req, res)=>{
+    conexion.query("UPDATE pedidos SET estado = ? WHERE id = ?",
+    {replacements: [ req.body.estado ,req.params.id]})
+        .then((resultados)=>{
+            res.status(201).json({ok:true, res:"Estado de pedido actualizado"})
+            
+        })
+    selectPedidos;
+})
+//Delete pedidos por id
+server.delete("/pedidos/:id", verificarLogIn, habilitarPermisosAdministrador, verificarIdExistenteProductos, (req,res,err)=>{
+    conexion.query("DELETE FROM pedidos WHERE id= ?", {replacements: [req.params.id]})
+        .then((resultados)=>{
+            console.log("Pedido eliminado con éxito")
+            res.status(204)
+            selectPedidos;
+        })
+})
+
+
+
