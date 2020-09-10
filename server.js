@@ -75,10 +75,13 @@ function validarUsuarioContraseña (req,res,next){
     }
 }
 let verificarToken;
+function  traerTokenUsuario(req){
+    const tokenRecibido = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
+}
 function autenticarUsuario (req,res,next){
     try{
-        const tokenRecibido = req.headers.authorization.split(" ")[1];
-        verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
+        traerTokenUsuario(req);
         if(verificarToken){
             req.usuario = verificarToken;
             return next();
@@ -228,8 +231,7 @@ server.get("/usuarios", verificarLogIn, habilitarPermisosAdministrador, (req, re
 });
 //Get información del usuario logueado
 server.get("/usuarios/myinfo", verificarLogIn, (req,res,err)=>{
-    const tokenUsuario = req.headers.authorization.split(" ")[1];
-    verificarToken = jwt.verify(tokenUsuario, CLAVE_CIFRADO_SERVER);
+   traerTokenUsuario(req);
     function buscarInfoUsuario (usuario){
         return usuario.nombredeusuario === verificarToken.nombredeusuario;
     }
@@ -289,33 +291,57 @@ server.get("/pedidos/:id", verificarLogIn, habilitarPermisosAdministrador, verif
 })
 //Post pedidos 
 server.post("/pedidos", verificarLogIn, (req,res,err)=>{
+    //productos
     let productosPedidos = [];
+    let montoPedido = 0;
     const productosRequest = req.body.productos;
     function concatenarProductoCantidad (element){
-        productosPedidos.push( element.nombre + "X" + element.cantidad + "  ")
+        productosPedidos.push(" " + element.nombre + "X" + element.cantidad )
     }
     productosRequest.forEach(concatenarProductoCantidad);
+    for (i = 0; i < productosRequest.length; i++){
+        function buscarProducto (producto){
+            return producto.nombre == productosRequest[i].nombre
+        }
+        let precioProducto = listaDeProductos.find(buscarProducto).precio
+        let precioMultiplicado = precioProducto * productosRequest[i].cantidad;
+        montoPedido = montoPedido + precioMultiplicado
+    }
     const stringProductos = productosPedidos.toString();
-    const tokenUsuarioPedidos = req.headers.authorization.split(" ")[1];
-    verificarToken = jwt.verify(tokenUsuarioPedidos, CLAVE_CIFRADO_SERVER);
+    //usuario
+    traerTokenUsuario(req);
     function buscarInfoUsuarioPedidos (usuario){
         return usuario.nombredeusuario === verificarToken.nombredeusuario;
     }
     const infoDeUsuarioPedidos = listaDeUsuarios.find(buscarInfoUsuarioPedidos);
+    //fecha
     const fechaDePedido = moment().format('YYYY-MM-DDThh:mm');
-    conexion.query("INSERT INTO pedidos (usuario_id, productos, fecha, mododepago, estado) VALUES (?,?,?,?,?)",
-    {replacements: [infoDeUsuarioPedidos.id, stringProductos, fechaDePedido, req.body.mododepago, "Nuevo"]})
+    conexion.query("INSERT INTO pedidos (usuario_id, descripcion, fecha, mododepago, estado, monto) VALUES (?,?,?,?,?,?)",
+    {replacements: [infoDeUsuarioPedidos.id, stringProductos, fechaDePedido, req.body.mododepago, "Nuevo", montoPedido]})
         .then((resultados)=>{
-            console.log(resultados)
-            res.status(200).json({ ok:true, res:"Pedido enviado con éxito"})
-            selectPedidos();
+            res.status(200).json({ok:"true", res:"Pedido enviado con éxito"})
+            productosRequest.forEach((producto)=>{
+                function verificarIdProducto (productorespuesta){
+                    return productorespuesta.nombre == producto.nombre;
+                }
+                const verificarIdProductoPedido = listaDeProductos.find(verificarIdProducto);
+                conexion.query("INSERT INTO infopedidos (id_pedido, id_producto) VALUES (?,?)",
+                {replacements: [resultados[0], verificarIdProductoPedido.id]})
+                    .then((resultados)=>{
+                        console.log(resultados)
+                    })
+                    .catch((error)=>{
+                        console.log(error) 
+                    })
+                }
+            )
         })
         .catch((err)=>{
             console.log("Algo salió mal.......", err)
         })
     })
 //Get mis pedidos 
-server.get("/pedidos/mispedidos", verificarLogIn, (req,res,err)=>{
+server.get("/mispedidos", verificarLogIn, (req,res,err)=>{
     const tokenUsuario = req.headers.authorization.split(" ")[1];
     verificarToken = jwt.verify(tokenUsuario, CLAVE_CIFRADO_SERVER);
     function buscarInfoUsuario (usuario){
@@ -325,8 +351,14 @@ server.get("/pedidos/mispedidos", verificarLogIn, (req,res,err)=>{
     conexion.query("SELECT * FROM pedidos WHERE usuario_id = ?", 
     {replacements: [infoDeUsuario.id], type: conexion.QueryTypes.SELECT})
         .then((respuesta)=>{
+            if(respuesta.length){
             res.status(200).json(respuesta)
+            }else{
+                res.status(404).json({ok:"false", res:"No has realizado ningún pedido por el momento"})
+            }
         })
+
+   
 })  
 //Patch estado de pedido por id
 server.patch("/pedidos/:id", verificarLogIn, habilitarPermisosAdministrador, verificarIdExistentePedidos, (req, res)=>{
@@ -347,6 +379,4 @@ server.delete("/pedidos/:id", verificarLogIn, habilitarPermisosAdministrador, ve
             selectPedidos;
         })
 })
-
-
 
