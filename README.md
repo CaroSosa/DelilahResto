@@ -1,6 +1,6 @@
 # Delilah Resto
 
-Proyecto de una estudiante de Acámica que simula el funcionamiento de un sistema de pedidos online para un restaurante. API 100% back-end utilizando mySQL y node.js.
+Api de pedidos para un restaurant creada con Nodejs y mySQL.
 
 ## Requerimientos 
 Para utilizarlo necesitarás Node.js, Postman y xampp.
