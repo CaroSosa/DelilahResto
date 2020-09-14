@@ -48,7 +48,7 @@ Ejecuta ``npm install`` para instalar las dependencias.
 
 En el archivo ``create_tables.sql`` encontrarás las estructuras de las tablas para la utilización de la API, junto con la creación del administrador. Este usuario podrá crear, modificar y borrar productos, usuarios y pedidos, así como también podrá visualizar toda la información sobre los usuarios y los pedidos realizados.
 
-###Endpoints
+### Endpoints
 
 Encontrarás los posibles endpoints en el documento ``spect.yaml``. Puedes abrirlo en el [editor de Swagger](https://editor.swagger.io/) para visualizarlo mejor.
 
