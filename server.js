@@ -33,7 +33,7 @@ server.get("/usuarios", middleware.verificarLogIn, middleware.habilitarPermisosA
 //Get información del usuario logueado
 server.get("/usuarios/myinfo", middleware.verificarLogIn, funcionesUsuarios.getMyInfoUsuarioLogueado )  
 //Get usuario por nombredeusuario
-server.get("/usuarios/:nombredeusuario", middleware.verificarLogIn,/* middleware.habilitarPermisosAdministrador*/ middleware.validarInfoCompletaUsuario, funcionesUsuarios.getUsuarioPorNombredeusuario )
+server.get("/usuarios/:nombredeusuario", middleware.verificarLogIn,middleware.habilitarPermisosAdministrador, middleware.validarInfoCompletaUsuario, funcionesUsuarios.getUsuarioPorNombredeusuario )
 //Put usuarios por nombredeusuario
 server.put("/usuarios/:nombredeusuario", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, funcionesUsuarios.putUsuarioPorNombredeusuario )
 //Delete usuario por nombredeusuario

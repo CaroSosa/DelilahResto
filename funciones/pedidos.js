@@ -4,7 +4,6 @@ const conexion = new Sequelize("mysql://root@localhost:3306/delilah");
 const jwt = require("jsonwebtoken");
 const CLAVE_CIFRADO_SERVER = "PROYECTO3DELILAHACAMICA";
 const moment = require("moment");
-const productos = require("./productos");
 
 module.exports ={
     getListaDePedidos,
@@ -36,61 +35,19 @@ function getPedidoPorId(req, res){
         
     })
 }
-function postPedido(req,res){
-    //productos
-    let productosPedidos = [];
-    let montoPedido = 0;
-    const productosRequest = req.body.productos;
-    function concatenarProductoCantidad (element){
-        productosPedidos.push(" " + element.nombre + "X" + element.cantidad )
-    }
+
+let montoPedido = 0;
+let productosPedidos = [];
+
+async function postPedido(req,res){
+    let productosRequest = req.body.productos;
     productosRequest.forEach(concatenarProductoCantidad);
-    conexion.query("SELECT * FROM productos", {type: conexion.QueryTypes.SELECT})
-    .then((productos)=>{
-        for (i = 0; i < productosRequest.length; i++){
-            let precioProducto = productos[i].precio;
-            let precioMultiplicado = precioProducto * productosRequest[i].cantidad;
-            montoPedido = montoPedido + precioMultiplicado
-        }
-    })
-    const stringProductos = productosPedidos.toString();
-    //fecha
+    const descripcionPedido = productosPedidos.toString();
     const fechaDePedido = moment().format('YYYY-MM-DDThh:mm');
-    //usuario
-    let infoDeUsuarioPedidos;
-    const tokenRecibido = req.headers.authorization.split(" ")[1];
-    verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
-    conexion.query("SELECT * FROM usuarios WHERE nombredeusuario = ?", {replacements: [verificarToken.nombredeusuario], type: conexion.QueryTypes.SELECT})
-    .then((usuario)=>{
-        infoDeUsuarioPedidos = usuario[0];
-        conexion.query("INSERT INTO pedidos (usuario_id, descripcion, fecha, mododepago, estado, monto) VALUES (?,?,?,?,?,?)",
-        {replacements: [infoDeUsuarioPedidos.id, stringProductos, fechaDePedido, req.body.mododepago, "Nuevo", montoPedido]})
-        .then((resultados)=>{
-            res.status(200).json({ok:"true", res:"Pedido enviado con éxito"})
-            productosRequest.forEach((producto)=>{
-                conexion.query("SELECT * FROM productos WHERE nombre = ?", 
-                {replacements: [producto.nombre], type: conexion.QueryTypes.SELECT})
-                    .then((productoResultado)=>{
-                        conexion.query("INSERT INTO infopedidos (id_pedido, id_producto) VALUES (?,?)",
-                        {replacements: [resultados[0], productoResultado[0].id]})
-                        
-                            .then((pedidoFinal)=>{
-                                console.log(pedidoFinal)
-                            })
-                            .catch((error)=>{
-                                console.log(error) 
-                            })
-                        }
-                    )
-                
-                }
-            )
-        })
-        .catch((err)=>{
-            console.log("Algo salió mal.......", err)
-        })
-    })
-    
+    const idUsuario = await buscarIdUsuario(req);
+    const montoPedidoFinal = await calcularMontoPedido(req)
+    const idPedidoSimple = await postPedidoArmado (idUsuario, descripcionPedido, fechaDePedido, req, montoPedidoFinal);
+    const respuestaPostPedido = await postInfopedidos(req, res, idPedidoSimple);
 }
 function getMisPedidos(req,res){
     const tokenUsuario = req.headers.authorization.split(" ")[1];
@@ -117,4 +74,39 @@ function patchModificarEstadoPedido(req, res){
         .then((resultados)=>{
             res.status(201).json({ok:true, res:"Estado de pedido actualizado", resultados})
         })
+}
+async function calcularMontoPedido(req){
+    const listaDeProductos = await conexion.query("SELECT * FROM productos", {type: conexion.QueryTypes.SELECT})
+    for (i = 0; i < req.body.productos.length; i++){
+        let buscarProducto = (producto)=>{
+            return producto.nombre == req.body.productos[i].nombre
+        }
+        let precioProducto = listaDeProductos.find(buscarProducto).precio
+        let precioMultiplicado = precioProducto * req.body.productos[i].cantidad;
+        montoPedido = montoPedido + precioMultiplicado;
+        }
+    return montoPedido;
+}
+function concatenarProductoCantidad (element){
+    productosPedidos.push(" " + element.nombre + "X" + element.cantidad )
+
+}
+async function buscarIdUsuario (req){
+    const tokenRecibido = req.headers.authorization.split(" ")[1];
+    verificarToken = jwt.verify(tokenRecibido, CLAVE_CIFRADO_SERVER);
+    let infoUsuario = await conexion.query("SELECT * FROM usuarios WHERE nombredeusuario = ?", {replacements: [verificarToken.nombredeusuario], type: conexion.QueryTypes.SELECT});
+    return infoUsuario[0].id
+}
+async function postPedidoArmado (idUsuario, descripcionPedido, fechaDePedido, req, montoPedidoFinal){
+    const idPedido = await conexion.query("INSERT INTO pedidos (usuario_id, descripcion, fecha, mododepago, estado, monto) VALUES (?,?,?,?,?,?)",
+    {replacements: [idUsuario, descripcionPedido, fechaDePedido, req.body.mododepago, "Nuevo", montoPedidoFinal]})
+    return idPedido[0];
+}
+async function postInfopedidos(req, res, idPedido){
+    await req.body.productos.forEach((producto)=>{
+        conexion.query("INSERT INTO infopedidos (id_pedido, id_producto) VALUES (?,?)",
+        {replacements: [idPedido, producto.id]})
+        }
+    )
+    return res.status(200).json({ok:true, res:"Pedido enviado con éxito"})
 }
