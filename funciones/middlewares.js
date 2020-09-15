@@ -10,7 +10,8 @@ module.exports = {
     verificarIdExistentePedidos,
     validarUsuarioContraseña,
     habilitarPermisosAdministrador,
-    verificarLogIn
+    verificarLogIn,
+    validarInfoCompletaPedido
 }
 
 let verificarToken;
@@ -24,8 +25,8 @@ function validarInfoCompletaUsuario (req, res, next){
     }
 }
 function validarInfoCompletaProducto (req,res,next){
-    const {nombre, precio, ingredientes, stock} = req.body;
-    if( !nombre || !precio || !ingredientes || !stock){
+    const {nombre, precio, ingredientes} = req.body;
+    if( !nombre || !precio || !ingredientes ){
         res.status(400).json({ok:false, res:"Debe completar todos los datos para la creación de un producto nuevo"})
     }else{
         next();
@@ -57,7 +58,7 @@ function validarUsuarioContraseña (req,res,next){
     if(usuario.contraseña == req.body.contraseña){
         next();
     }else{
-        res.status(404).json({ok:false, res:"error en usuario o contraseña"})
+        res.status(401).json({ok:false, res:"error en usuario o contraseña"})
     }
     })
 }
@@ -69,7 +70,7 @@ function habilitarPermisosAdministrador(req,res,next){
     if(usuario[0].is_admin == "true"){
         next();
     }else{
-    res.status(400).json({ok:false, res:"No posees los permisos necesarios para la acción que deseas realizar"})
+    res.status(401).json({ok:false, res:"No posees los permisos necesarios para la acción que deseas realizar"})
         }
     })
 }
@@ -78,6 +79,14 @@ function verificarLogIn (req,res,next){
     if(headerAutorizacion != undefined){
         next();
     }else{
-        res.json({ res:"Debes iniciar sesion, dirígete a /usuarios/login"})
+        res.status(401).json({ok:false, res:"Debes iniciar sesion, dirígete a /usuarios/login"})
+    }
+}
+function validarInfoCompletaPedido(req,res,next){
+    const {producto, nombre, id, cantidad, mododepago} = req.body;
+    if( !producto || !nombre || !id || !cantidad || !mododepago){
+        res.status(400).json({ok:false, res:"Debe completar todos los datos para la creación de un pedido nuevo"})
+    }else{
+        next();
     }
 }

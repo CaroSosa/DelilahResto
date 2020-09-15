@@ -8,7 +8,7 @@ module.exports = {
     logInUsuario,
     getListaDeUsuarios,
     getMyInfoUsuarioLogueado,
-    putUsuarioPorNombredeusuario,
+    modificarUsuarioPorNombredeusuario,
     getUsuarioPorNombredeusuario,
     deleteUsuariosPorNombredeusuario,
 }
@@ -27,7 +27,7 @@ function signUpUsuario(req,res){
     conexion.query("SELECT * FROM usuarios WHERE nombredeusuario = ?", {replacements: [req.body.nombredeusuario], type: conexion.QueryTypes.SELECT})
         .then((usuario)=>{
             if(usuario > 0){
-                res.status(409).json({ok:false, err: "Ya existe un usuario con ese nombredeusuario"})
+                res.status(409).json({ok:false, err: "Ya existe un usuario con ese nombredeusuario, por favor intenta con uno nuevo."})
             }else{ 
                 conexion.query("INSERT INTO usuarios (nombredeusuario, contraseña, nombre, apellido, email, telefono, direccion, is_admin) VALUES (?,?,?,?,?,?,?,?)",
             {replacements: [req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion, "false"]})
@@ -44,7 +44,7 @@ function signUpUsuario(req,res){
 function logInUsuario(req,res){
     const {nombredeusuario, contraseña} = req.body;
     const token = jwt.sign({nombredeusuario, contraseña}, CLAVE_CIFRADO_SERVER);
-    res.json({token})
+    res.status(200).json({token})
 }
 function getMyInfoUsuarioLogueado(req,res){
     const tokenRecibido = req.headers.authorization.split(" ")[1];
@@ -66,7 +66,7 @@ function getUsuarioPorNombredeusuario(req,res){
         
     })
 }
-function putUsuarioPorNombredeusuario(req,res){
+function modificarUsuarioPorNombredeusuario(req,res){
     conexion.query("UPDATE usuarios SET nombredeusuario = ?, contraseña = ?, nombre = ?, apellido = ?,  email = ?, telefono = ?, direccion = ?, is_admin WHERE nombredeusuario = ?",
     {replacements: [ req.body.nombredeusuario, req.body.contraseña, req.body.nombre, req.body.apellido, req.body.email, req.body.telefono, req.body.direccion, "false", req.params.nombredeusuario ]})
         .then((resultados)=>{

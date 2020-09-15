@@ -18,9 +18,9 @@ server.get("/productos", middleware.verificarLogIn, funcionesProductos.getListaD
 //Get producto por id  
 server.get("/productos/:id", middleware.verificarLogIn, middleware.verificarIdExistenteProductos, funcionesProductos.getProductoPorId)
 //Post productos por formulario
-server.post("/productos", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.validarInfoCompletaProducto, funcionesProductos.postProductoPorFormulario)
+server.post("/productos", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.validarInfoCompletaProducto, funcionesProductos.guardarProductoPorFormulario)
 //Put productos por id
-server.put("/productos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistenteProductos, middleware.validarInfoCompletaProducto, funcionesProductos.putProducto)
+server.put("/productos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistenteProductos, middleware.validarInfoCompletaProducto, funcionesProductos.modificarProducto)
 //Delete productos por id 
 server.delete("/productos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistenteProductos, funcionesProductos.deleteProducto)
 //////////USUARIOS
@@ -33,9 +33,9 @@ server.get("/usuarios", middleware.verificarLogIn, middleware.habilitarPermisosA
 //Get información del usuario logueado
 server.get("/usuarios/myinfo", middleware.verificarLogIn, funcionesUsuarios.getMyInfoUsuarioLogueado )  
 //Get usuario por nombredeusuario
-server.get("/usuarios/:nombredeusuario", middleware.verificarLogIn,middleware.habilitarPermisosAdministrador, middleware.validarInfoCompletaUsuario, funcionesUsuarios.getUsuarioPorNombredeusuario )
+server.get("/usuarios/:nombredeusuario", middleware.verificarLogIn,middleware.habilitarPermisosAdministrador, funcionesUsuarios.getUsuarioPorNombredeusuario )
 //Put usuarios por nombredeusuario
-server.put("/usuarios/:nombredeusuario", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, funcionesUsuarios.putUsuarioPorNombredeusuario )
+server.put("/usuarios/:nombredeusuario", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.validarInfoCompletaUsuario, funcionesUsuarios.modificarUsuarioPorNombredeusuario )
 //Delete usuario por nombredeusuario
 server.delete("/usuarios/:nombredeusuario", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, funcionesUsuarios.deleteUsuariosPorNombredeusuario)
 //////////////PEDIDOS
@@ -44,11 +44,11 @@ server.get("/pedidos", middleware.verificarLogIn, middleware.habilitarPermisosAd
 //Get pedido por id
 server.get("/pedidos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistentePedidos, funcionesPedidos.getPedidoPorId)
 //Post pedidos 
-server.post("/pedidos", middleware.verificarLogIn, funcionesPedidos.postPedido)
+server.post("/pedidos", middleware.verificarLogIn, middleware.validarInfoCompletaPedido, funcionesPedidos.guardarPedido)
 //Get mis pedidos 
 server.get("/mispedidos", middleware.verificarLogIn, funcionesPedidos.getMisPedidos)  
 //Patch estado de pedido por id
-server.patch("/pedidos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistentePedidos, funcionesPedidos.patchModificarEstadoPedido)
+server.patch("/pedidos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistentePedidos, funcionesPedidos.modificarEstadoPedido)
 //Delete pedidos por id
 server.delete("/pedidos/:id", middleware.verificarLogIn, middleware.habilitarPermisosAdministrador, middleware.verificarIdExistenteProductos, funcionesPedidos.deletePedidoPorId)
 

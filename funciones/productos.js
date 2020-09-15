@@ -4,8 +4,8 @@ const conexion = new Sequelize("mysql://root@localhost:3306/delilah")
 module.exports = {
     getProductoPorId,
     getListaDeProductos,
-    postProductoPorFormulario,
-    putProducto,
+    guardarProductoPorFormulario,
+    modificarProducto,
     deleteProducto
 }
 function getListaDeProductos(req,res){ 
@@ -25,7 +25,7 @@ function getProductoPorId (req,res){
         res.json(respuesta)
     })
 }
-function postProductoPorFormulario(req,res){
+function guardarProductoPorFormulario(req,res){
     conexion.query("INSERT INTO productos (nombre, precio, ingredientes) VALUES (?,?,?)",
     {replacements: [req.body.nombre, req.body.precio, req.body.ingredientes]})
         .then((resultados)=>{
@@ -37,7 +37,7 @@ function postProductoPorFormulario(req,res){
             console.log("Algo salió mal.......", err)
         })
 }
-function putProducto (req,res,err){
+function modificarProducto (req,res,err){
     conexion.query("UPDATE productos SET nombre = ?, precio = ?, ingredientes = ? WHERE id = ?",
     {replacements: [ req.body.nombre, req.body.precio, req.body.ingredientes, req.params.id]})
         .then((resultados)=>{

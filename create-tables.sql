@@ -2,7 +2,7 @@ CREATE TABLE productos(
     id INT PRIMARY KEY NOT NULL AUTO_INCREMENT ,
     nombre VARCHAR(60) NOT NULL UNIQUE,
     precio DOUBLE NOT NULL,
-    ingredientes TEXT NOT NULL,
+    ingredientes TEXT NOT NULL
 );
 CREATE TABLE usuarios(
     id INT PRIMARY KEY NOT NULL AUTO_INCREMENT ,
