@@ -7,6 +7,7 @@ servers:
   - url: /productos.com
   - url: /usuarios.com
   - url: /pedidos.com
+  - url: /mispedidos.com
 paths:
   /productos:
     get:
@@ -85,6 +86,18 @@ paths:
                   code:
                     type: number
                     default: 400
+                  message:
+                    type: string
+        409:
+          description: Ya existe un prodcuto con ese nombre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 409
                   message:
                     type: string
         500:
@@ -178,45 +191,16 @@ paths:
                     default: 400
                   message:
                     type: string
-        500:
-          description: Error del servidor
+        404:
+          description: No se encuentra el producto
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  code: 
-                    type: number
-                    default: 500
-                  message:
-                    type: string
-    patch:
-      tags: [Productos]
-      summary: Actualiza parcialmente un producto existente
-      description: Modifica parcialmente un producto de la carta
-      parameters:
-        - in: query
-          name: producto
-          required: true
-          schema:
-            "$ref": "#/components/schemas/producto"
-      responses:
-        201:
-          description: Producto modificado correctamente
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/producto"
-        400:
-          description: Sintaxis inválida
-          content:
-            application/json:
-               schema:
                 type: object
                 properties:
                   code:
                     type: number
-                    default: 400
+                    default: 404
                   message:
                     type: string
         500:
@@ -245,7 +229,17 @@ paths:
                 properties:
                   code:
                     type: number
-                    default: 204
+                    default: 204  
+        404:
+          description: No se encuentra el producto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
                   message:
                     type: string  
   /usuarios:
@@ -298,6 +292,7 @@ paths:
                     default: 500
                   message:
                     type: string
+  /usuarios/signup:
     post:
       tags: [Usuarios]
       summary: Agregar Usuarios
@@ -327,6 +322,18 @@ paths:
                     default: 400
                   message:
                     type: string
+        409:
+          description: Ya existe usuario con ese nombre de usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 409
+                  message:
+                    type: string
         500:
           description: Error del servidor
           content:
@@ -339,11 +346,149 @@ paths:
                     default: 500
                   message:
                     type: string  
-  /usuarios/id:
+  /usuarios/login:
+    post:
+      tags: [Usuarios]
+      summary: Autenticar usuarios
+      description: Permite que el usuario inice sesión y lo autentica.
+      parameters:
+        - in: query
+          name: Usuario
+          required: true
+          schema:
+            "$ref": "#/components/schemas/usuariologin"
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref" : "#/components/schemas/usuariologinjwt"
+        401:
+          description: Usuario o contraseña inválida.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+  /usuarios/username:
     get:
       tags: [Usuarios]
       summary: Obtencion un usuario
-      description: Usuario elegido por id
+      description: Usuario elegido por username.
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/usuario"
+        401:
+          description: No posee los permisos necesarios para acceder a la información.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 401
+                  message:
+                    type: string
+        404:
+          description: No exise un usuario con ese nombredeusuario.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    put:
+      tags: [Usuarios]
+      summary: Actualiza o reemplaza la información del usuario logueado.
+      description: Permite al usuario reemplazar o modificar su información de cuenta.
+      parameters:
+        - in: query
+          name: producto
+          required: true
+          schema:
+            "$ref": '#/components/schemas/usuario'
+      responses:
+        201:
+          description: Producto modificado correctamente
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/usuario'
+        400:
+          description: Sintaxis inválida
+          content:
+            application/json:
+               schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 400
+                  message:
+                    type: string
+        500:
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: 
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+    delete:
+      tags: [Usuarios]
+      summary: Elimina un usuario 
+      description: Elimina un usuario de la base de datos
+      responses:
+        204:
+          description: No content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 204
+  /usuarios/myinfo:
+     get:
+      tags: [Usuarios]
+      summary: Obtención de datos propios de la cuenta logueada.
+      description: Datos ingresados a nombre de la cuenta con el username logueado.
       responses:
         200:
           description: Todo salió bien.
@@ -389,105 +534,6 @@ paths:
                     default: 500
                   message:
                     type: string
-    put:
-      tags: [Usuarios]
-      summary: Actualiza o reemplaza un usuario existente
-      description: Modifica totalmente un usuario de la base de datos
-      parameters:
-        - in: query
-          name: producto
-          required: true
-          schema:
-            "$ref": '#/components/schemas/usuario'
-      responses:
-        201:
-          description: Producto modificado correctamente
-          content:
-            application/json:
-              schema:
-                "$ref": '#/components/schemas/usuario'
-        400:
-          description: Sintaxis inválida
-          content:
-            application/json:
-               schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                    default: 400
-                  message:
-                    type: string
-        500:
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: 
-                    type: number
-                    default: 500
-                  message:
-                    type: string
-    patch:
-      tags: [Usuarios]
-      summary: Actualiza parcialmente un usuario existente
-      description: Modifica parcialmente un usuario de la base de datos
-      parameters:
-        - in: query
-          name: producto
-          required: true
-          schema:
-            "$ref": '#/components/schemas/usuario'
-      responses:
-        201:
-          description: Usuario modificado correctamente
-          content:
-            application/json:
-              schema:
-                "$ref": '#/components/schemas/usuario'
-        400:
-          description: Sintaxis inválida
-          content:
-            application/json:
-               schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                    default: 400
-                  message:
-                    type: string
-        500:
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: 
-                    type: number
-                    default: 500
-                  message:
-                    type: string
-    delete:
-      tags: [Usuarios]
-      summary: Elimina un usuario 
-      description: Elimina un usuario de la base de datos
-      responses:
-        204:
-          description: No content
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                    default: 204
-                  message:
-                    type: string  
   /pedidos:
     get:
       tags: [Pedidos]
@@ -515,7 +561,7 @@ paths:
                   message:
                     type: string
         404:
-          description: No se encuentra la lista de usuarios.
+          description: No se encuentra la lista de pedidos.
           content:
             application/json:
               schema:
@@ -547,14 +593,20 @@ paths:
           name: producto
           required: true
           schema:
-            "$ref": "#/components/schemas/pedido"
+            "$ref": "#/components/schemas/pedidopost"
       responses:
         201:
           description: Pedido agregado correctamente
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/pedido"
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 201
+                  message:
+                    type: string
         400:
           description: Sintaxis inválida
           content:
@@ -629,86 +681,39 @@ paths:
                     default: 500
                   message:
                     type: string
-    put:
-      tags: [Pedidos]
-      summary: Actualiza o reemplaza un pedido existente
-      description: Modifica totalmente un pedido de la base de datos
-      parameters:
-        - in: query
-          name: producto
-          required: true
-          schema:
-            "$ref": '#/components/schemas/pedido'
-      responses:
-        201:
-          description: Pedido modificado correctamente
-          content:
-            application/json:
-              schema:
-                "$ref": '#/components/schemas/pedido'
-        400:
-          description: Sintaxis inválida
-          content:
-            application/json:
-               schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                    default: 400
-                  message:
-                    type: string
-        500:
-          description: Error del servidor
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: 
-                    type: number
-                    default: 500
-                  message:
-                    type: string
     patch:
       tags: [Pedidos]
-      summary: Actualiza parcialmente un pedido existente
-      description: Modifica parcialmente un pedido de la base de datos
+      summary: Modifica el estado de un pedido
+      description: Permite al adminstrador midificar el estado del pedido entre Nuevo, Confirmado, Preparando, Enviando, Entregado
       parameters:
         - in: query
           name: producto
           required: true
           schema:
-            "$ref": '#/components/schemas/pedido'
+            "$ref": "#/components/schemas/pedidoestado"
       responses:
         201:
-          description: Usuario modificado correctamente
+          description: Pedido agregado correctamente
           content:
             application/json:
               schema:
-                "$ref": '#/components/schemas/pedido'
-        400:
-          description: Sintaxis inválida
-          content:
-            application/json:
-               schema:
                 type: object
                 properties:
                   code:
                     type: number
                     default: 400
                   message:
-                    type: string
-        500:
-          description: Error del servidor
+                      type: string    
+        400:
+          description: Sintaxis inválida
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: 
+                  code:
                     type: number
-                    default: 500
+                    default: 400
                   message:
                     type: string
     delete:
@@ -728,6 +733,45 @@ paths:
                     default: 204
                   message:
                     type: string  
+  /mispedidos:
+    get:
+      tags: [Pedidos]
+      summary: Listado de pedidos realizados
+      description: Pedidos realizados por la cuenta logueada.
+      responses:
+        200:
+          description: Todo salió bien.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/pedido"
+        404:
+          description: No has realizado ningún pedido todavía.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 404
+                  message:
+                    type: string
+        500:
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: number
+                    default: 500
+                  message:
+                    type: string
+  
 components:
   schemas:
     producto:
@@ -762,15 +806,27 @@ components:
           type: number
         direccion:
           type: number
+    usuariologin:
+      type: object
+      properties:
+        nombredeusuario: 
+          type: string
+        contraseña:
+          type: string
+    usuariologinjwt:
+      type: object
+      properties:
+        token:
+          type: string
     pedido:
       type: object
       properties:
         id:
           type: number
-        usuario:
-          type: string
-        producto:
-          type: string
+        usuario_id:
+          type: number
+        producto_id:
+          type: number
         fecha:
           type: string
           format: date
@@ -778,9 +834,18 @@ components:
           type: string
         estado:
           type: string
-      
-
-  
- 
-  
-  
+    pedidopost:
+      type: object
+      properties:
+        productos:
+          type: array
+          items:
+            type: object 
+        mododepago: 
+          type: string
+    pedidoestado:
+      type: object
+      properties:
+        estado:
+          type: string
+    
