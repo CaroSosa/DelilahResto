@@ -50,7 +50,7 @@ En el archivo ``create_tables.sql`` encontrarás las estructuras de las tablas p
 
 ### Endpoints
 
-Encontrarás los posibles endpoints en el documento ``spect.yaml``. Puedes abrirlo en el [editor de Swagger](https://editor.swagger.io/) para visualizarlo mejor.
+Encontrarás los posibles endpoints en el documento ``spec.yaml``. Puedes abrirlo en el [editor de Swagger](https://editor.swagger.io/) para visualizarlo mejor.
 
 #### Formatos 
 - Para ingresar un pedido
