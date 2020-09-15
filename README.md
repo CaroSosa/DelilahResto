@@ -52,6 +52,24 @@ En el archivo ``create_tables.sql`` encontrarás las estructuras de las tablas p
 
 Encontrarás los posibles endpoints en el documento ``spect.yaml``. Puedes abrirlo en el [editor de Swagger](https://editor.swagger.io/) para visualizarlo mejor.
 
+#### Formatos 
+- Para ingresar un pedido
+
+```
+{
+    "productos" : [{
+        "id" : "1"
+        "nombre" : "ejemplo1",
+        "cantidad" : "5"
+    },{
+        "id" : "2"
+        "nombre" : "ejemplo2",
+        "cantidad" : "5"
+    }],
+    "mododepago" : "Efectivo/tarjeta"
+}
+
+```
 
 ## Autores
 - **Sosa Ana Carolina** -  *Trabajo completo* [CaroSosa](https://github.com/CaroSosa)
